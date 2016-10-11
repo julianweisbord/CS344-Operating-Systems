@@ -1,65 +1,84 @@
 #!/bin/bash -e
 
-if [ "$#" -lt 2 ] || [ "$#" -ge 4 ]
-  then echo "Usage: stats {-rows|-cols} [file]" >&2
+if [ "$#" -lt 1 ] || [ "$#" -ge 3 ]
+  then >&2 echo "Usage: stats {-rows|-cols} [file]"
   #send to stderr
   exit
 fi
 
-rowCol=$1
-
-
+##### Ben Brewster's hint #####
+#Puts stdin into file if no text file is used as an argument when this program is ran
+datafilepath="datafile$$"
+if [ "$#" = "1" ]
+then
+    cat > "$datafilepath" #'ctrl d' stops the cat into file
+elif [ "$#" = "2" ]
+then
+    datafilepath=$2
+fi
+#####
 calc_avg(){
 
   echo "Median Mean"
-  while read line #reads from stdin if no file
+  while read line
   do
     #median
     #echo "$line"
-    count_num = wc $line
-    firstHalf = expr $count_num / 2
+    count_num=`wc -w <<< "$line"`
+    #echo $count_num
+    firstHalf=$(( count_num / 2 ))
 
-    if [ $count_num % 2 -gt 0 ]
+    if [ $((count_num % 2)) -gt 0 ]
       then ((++$firstHalf)) #expr $firstHalf +1 #try
-      echo $firstHalf
+      #echo $firstHalf
     fi
 
-    secondHalf = $count_num - $firstHalf
-    $line | tr '\t' '\n' | sort -n | head -n $firstHalf > file1.txt | tail -n $secondHalf > file2.txt #
-    if [ $count_num % 2 == 0 ]
+    secondHalf=`expr $count_num - $firstHalf`
+
+    echo $line | tr '\t' '\n' | sort -n | head -n $firstHalf > file1.txt | tail -n $secondHalf > file2.txt #
+    if [ $((count_num % 2)) -eq 0 ]
     then
       if [ tail -n 1 $file1 -gt head -n 1 $file2 ]
       then
-        median = tail -n 1 $file1
+        median= tail -n 1 $file1
       else
-        median = head -n 1 $file2
+        median= head -n 1 $file2
       fi
     else
-      median = tail -n 1 file1.txt
+      median= tail -n 1 file1.txt
     fi
     printf "$median \t"
     #average
 
     for char in $line; do
-      sum = expr $char + $sum
-    done
-    mean = expr $sum/$count
-    printf "$mean"
 
-  done < "${1:-/dev/stdin}"
+      #echo " $((char + sum))"
+      sum=$((char + sum))
+
+    done
+    mean= expr $sum/$count
+    #printf "Mean: "
+    printf "$mean\n"
+
+  done < $datafilepath
 }
 
+##### Ben Brewster's hint #####
+if [[ $1 == -r* ]];
+then
+    echo "calculating row stats";
+    calc_avg
+elif [[ $1 == -c* ]];
+then
+   echo "calculating column stats";
+   calc_avg
 
-if [[ ${rowCol:1:2} == 'r' ]]
-  then calc_avg #call statistics func
-# elif [[${rowCol:0:1} == "c"]]
-#   then #call statistics func
 else
-  echo "Invalid commandline arguments." >&2
+  >&2 echo "Invalid commandline arguments."
   #send to stderr
   exit
 fi
-
+#####
 
 
 exit 0 #exit with no errors
