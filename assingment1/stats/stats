@@ -20,7 +20,8 @@ calc_avg(){
     firstHalf = expr $count_num / 2
 
     if [ $count_num % 2 -gt 0 ]
-      then expr $firstHalf +1 #try ((++$firstHalf))
+      then ((++$firstHalf)) #expr $firstHalf +1 #try
+      echo $firstHalf
     fi
 
     secondHalf = $count_num - $firstHalf
