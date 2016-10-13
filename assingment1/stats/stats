@@ -1,9 +1,9 @@
 #!/bin/bash -e
 
 if [ "$#" -lt 1 ] || [ "$#" -ge 3 ]
-  then >&2 echo "Usage: stats {-rows|-cols} [file]"
-  #send to stderr
-  exit
+  then
+  echo "Usage: stats {-rows|-cols} [file]" >&2 #send to stderr
+  exit 1 #exit with error status 1
 fi
 
 ##### Ben Brewster's hint #####
@@ -23,31 +23,45 @@ calc_avg(){
   while read line
   do
     #median
-    #echo "$line"
+    #echo " line $line"
     count_num=`wc -w <<< "$line"`
-    #echo $count_num
+    #echo "count_num:" $count_num
     firstHalf=$(( count_num / 2 ))
 
-    if [ $((count_num % 2)) -gt 0 ]
-      then ((++$firstHalf)) #expr $firstHalf +1 #try
-      #echo $firstHalf
+    if [ $((count_num % 2)) -gt 0 ]; then
+      firstHalf=$(expr $firstHalf + 1) #increment if odd
     fi
 
     secondHalf=`expr $count_num - $firstHalf`
+    #var1=`echo $line | tr '\t' '\n' | sort -n`
+    #echo $var1
+    #var2="head -n $firstHalf $var1 >file1.txt | tail -n $secondHalf $var1 >file2.txt"
+    #var3=$(eval $var2)
 
-    echo $line | tr '\t' '\n' | sort -n | head -n $firstHalf > file1.txt | tail -n $secondHalf > file2.txt #
-    if [ $((count_num % 2)) -eq 0 ]
-    then
-      if [ tail -n 1 $file1 -gt head -n 1 $file2 ]
-      then
-        median= tail -n 1 $file1
-      else
-        median= head -n 1 $file2
-      fi
-    else
-      median= tail -n 1 file1.txt
-    fi
-    printf "$median \t"
+    tempVar1=`echo $line > tempTest1.txt`
+    #tempVar2=`sed -e 'y/\t/\n/' tempTest1.txt > tempTest2.txt`
+    #echo "tempTest1"; cat tempTest1.txt
+    tempVar3=`cat tempTest1.txt | tr ' ' '\n' | sort -n | head -n $firstHalf | tail -n 1 > tempTest3.txt`
+    #echo $line | tr '\t' '\n' | sort -n | head -n $firstHalf | tail -n 1 > file1.txt
+
+    # if [ $((count_num % 2)) -eq 0 ]
+    # then
+    #   if [ tail -n 1 $file1 -gt head -n 1 $file2 ]
+    #   then
+    #     printf "Med:"
+    #     median= tail -n 1 $file1
+    #   else
+    #     printf "Med:"
+    #     median= head -n 1 $file2
+    #   fi
+    # else
+    #   printf "Med:"
+    #   median= tail -n 1 file1.txt
+    # fi
+    #printf "file: "
+    #cat file1.txt
+    median=`cat tempTest3.txt`
+    printf "Median: $median \t"
     #average
 
     for char in $line; do
@@ -56,9 +70,19 @@ calc_avg(){
       sum=$((char + sum))
 
     done
-    mean= expr $sum/$count
+
+    # Rounding algorithm for Half Round Up
+    testSumOne=$((sum % count_num))
+    testSumTwo=$((testSumOne * 10))
+    if [ $(( testSumTwo / count_num )) -ge 5 ]; then
+      denom=$(expr $count_num - 1)
+      sum=$(expr $sum + $denom) #increment if odd
+    fi
+    mean=`echo $(( sum / count_num ))`
+
     #printf "Mean: "
-    printf "$mean\n"
+    echo "Mean: $mean "
+    sum=0
 
   done < $datafilepath
 }
@@ -74,9 +98,9 @@ then
    calc_avg
 
 else
-  >&2 echo "Invalid commandline arguments."
-  #send to stderr
-  exit
+  >&2 echo "Invalid commandline arguments." #send to stderr
+
+  exit 1
 fi
 #####
 
