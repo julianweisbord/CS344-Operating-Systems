@@ -1,72 +1,82 @@
 #!/bin/bash -e
+#Check if there are an incorrect number of command line arguments
 
-if [ "$#" -lt 1 ] || [ "$#" -ge 3 ]
-  then
+#trap cleans up temporary files if the script is excited early.
+trap "rm -f temp* d* ; exit" SIGHUP SIGINT SIGTERM
+
+if [ "$#" -lt 1 ] || [ "$#" -ge 3 ]; then
   echo "Usage: stats {-rows|-cols} [file]" >&2 #send to stderr
   exit 1 #exit with error status 1
 fi
 
 ##### Ben Brewster's hint #####
-#Puts stdin into file if no text file is used as an argument when this program is ran
+#takes input from stdin into file if no text file is used as an argument when this program is ran
 datafilepath="datafile$$"
-if [ "$#" = "1" ]
-then
+if [ "$#" = "1" ]; then
     cat > "$datafilepath" #'ctrl d' stops the cat into file
-elif [ "$#" = "2" ]
-then
+elif [ "$#" = "2" ]; then
     datafilepath=$2
 fi
-#####
-calc_avg(){
 
+#Exits if there is no data in input
+if ! [ -s $datafilepath ]; then
+  echo "Empty File, exitting..."
+  exit 1 #exit with error status 1
+fi
+
+
+
+##### Main Function #####
+calc_avg(){ #Calculates mean and median, needs to take in rows or cols args
+
+
+  check=1
   echo "Median Mean"
-  while read line
-  do
-    #median
-    #echo " line $line"
-    count_num=`wc -w <<< "$line"`
-    #echo "count_num:" $count_num
+  while read line; do
+
+    ####calc median####
+
+    count_num=`wc -w <<< "$line"` # # of rows
+
+    # The following is a series of manipulations to put the middle values in text files
+    #Then these files are catted and the calculations are done
     firstHalf=$(( count_num / 2 ))
 
-    if [ $((count_num % 2)) -gt 0 ]; then
-      firstHalf=$(expr $firstHalf + 1) #increment if odd
-    fi
+    firstHalf=$(expr $firstHalf + 1) #increment if odd
 
     secondHalf=`expr $count_num - $firstHalf`
-    #var1=`echo $line | tr '\t' '\n' | sort -n`
-    #echo $var1
-    #var2="head -n $firstHalf $var1 >file1.txt | tail -n $secondHalf $var1 >file2.txt"
-    #var3=$(eval $var2)
+
 
     tempVar1=`echo $line > tempTest1.txt`
-    #tempVar2=`sed -e 'y/\t/\n/' tempTest1.txt > tempTest2.txt`
-    #echo "tempTest1"; cat tempTest1.txt
-    tempVar3=`cat tempTest1.txt | tr ' ' '\n' | sort -n | head -n $firstHalf | tail -n 1 > tempTest3.txt`
-    #echo $line | tr '\t' '\n' | sort -n | head -n $firstHalf | tail -n 1 > file1.txt
 
-    # if [ $((count_num % 2)) -eq 0 ]
-    # then
-    #   if [ tail -n 1 $file1 -gt head -n 1 $file2 ]
-    #   then
-    #     printf "Med:"
-    #     median= tail -n 1 $file1
-    #   else
-    #     printf "Med:"
-    #     median= head -n 1 $file2
-    #   fi
-    # else
-    #   printf "Med:"
-    #   median= tail -n 1 file1.txt
-    # fi
-    #printf "file: "
-    #cat file1.txt
-    median=`cat tempTest3.txt`
-    printf "Median: $median \t"
-    #average
 
-    for char in $line; do
+    tempVar2=`cat tempTest1.txt | tr ' ' '\n' | sort -n | head -n $firstHalf | tail -n 1 > tempTest2.txt`
+    tempVar3=`cat tempTest1.txt | tr ' ' '\n' | sort -n | head -n $firstHalf | tail -n 2 > tempTest3.txt`
 
-      #echo " $((char + sum))"
+    if [ $((count_num % 2)) -eq 0 ]; then
+
+      piper=`head -n 1 tempTest3.txt >tempTest4.txt`
+
+      top=`cat tempTest2.txt`
+      bot=`cat tempTest4.txt`
+      echo $bot
+      echo $top
+
+      if [ $bot -gt $top ]; then
+        median=$bot
+        printf "$median \t"
+
+      else
+        median=$top
+        printf "$median \t"
+      fi
+    else
+      median=`cat tempTest2.txt`
+      printf "$median \t"
+    fi
+
+    for char in $line; do #calc average
+
       sum=$((char + sum))
 
     done
@@ -80,29 +90,33 @@ calc_avg(){
     fi
     mean=`echo $(( sum / count_num ))`
 
-    #printf "Mean: "
-    echo "Mean: $mean "
+    echo "$mean "
     sum=0
-
   done < $datafilepath
 }
 
 ##### Ben Brewster's hint #####
-if [[ $1 == -r* ]];
-then
+if [[ $1 == -r* ]]; then
     echo "calculating row stats";
     calc_avg
-elif [[ $1 == -c* ]];
-then
+    # Redundant deletion of files
+    rm -f temp*
+    rm -f d*
+
+elif [[ $1 == -c* ]]; then
    echo "calculating column stats";
-   calc_avg
+   arg="c"
+   calc_avg $arg
+
+   # Redundant deletion of files
+   rm -f temp*
+   rm -f d*
 
 else
   >&2 echo "Invalid commandline arguments." #send to stderr
 
   exit 1
 fi
-#####
 
 
 exit 0 #exit with no errors
