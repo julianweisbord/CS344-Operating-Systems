@@ -105,8 +105,8 @@ if [[ $1 == -r* ]]; then
 
 elif [[ $1 == -c* ]]; then
    echo "calculating column stats";
-   arg="c"
-   calc_avg $arg
+
+   calc_avg
 
    # Redundant deletion of files
    rm -f temp*
