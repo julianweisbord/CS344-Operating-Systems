@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <time.h>
+#include <math.h>
 
 #define MAX_STR_LEN 20
 #define DIFF_ROOMS 10
@@ -39,6 +40,7 @@ void init_game(struct Game* adventure);
 int randNum(int start, int end);
 int check_win(struct Room* possibleEnd);
 void add_connection(struct Game *adventure, int index);
+double floorIt(double val);
 
 
 int main(int argc, char** argv){
@@ -153,28 +155,35 @@ void init_game(struct Game* adventure){
     //number that hasn't already been taken,
     add_connection(adventure, i);
   }
-
-}
-
-//randNum Function//
-int randNum(int start, int end){
-  time_t curTime;
-  srand((unsigned)time(&curTime));
-  int r = rand() % end;
-  // This hack isn't as random but will work for the purpose of printing a number in a range.
-  if((r < start) && (r +start<= end))
-    r+=start;
-  // printf("Random Number: %d\n", r);
-  return r;
-}
-//To check if the user is in the end room//
-int check_win(struct Room* possibleEnd){
-  if (possibleEnd->roomType == END_ROOM){
-    printf("YOU HAVE FOUND THE END ROOM. CONGRATULATIONS!\n");
-    return 1;
+  //This is just to check the names in the array
+  int z;
+  for (z = 0; z < NUM_ROOMS; ++z) {
+    printf("%s\n",adventure->roomArray[z]->name);
   }
-  return 0;
+
 }
+
+
+//Takes a number and returns the rounded down version of it//
+double floorIt(double val){
+   int end = (int)val - ((int)val % 1);
+  //  printf("End %d\n", end);
+  return end;
+}
+
+//randNum Function, special thanks to John Andersen//
+int randNum(int start, int end){
+  srandom(time(NULL));
+  int low = start;
+  int high = end;
+  // Call random
+  double res = floorIt((((double)random()/(double)(RAND_MAX)) * (double)1.0)*(high - low + 1) + low);
+
+  printf("Random number is res : %d\n", (int)res);
+  return (int)res;
+}
+
+
 //Initialize all connections//
 //Index is the position in the roomArray for the current room
 void add_connection(struct Game *adventure, int index){
@@ -193,6 +202,15 @@ void add_connection(struct Game *adventure, int index){
     }while(room->connectionArray[room->connection_num] == index); //Don't let a connection have a connection to itself
   }
 
+}
+
+//To check if the user is in the end room//
+int check_win(struct Room* possibleEnd){
+  if (possibleEnd->roomType == END_ROOM){
+    printf("YOU HAVE FOUND THE END ROOM. CONGRATULATIONS!\n");
+    return 1;
+  }
+  return 0;
 }
 //Interface Function To Be Room//
 // void interface(){}
