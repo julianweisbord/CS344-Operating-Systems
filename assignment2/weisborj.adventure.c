@@ -9,6 +9,9 @@
 #define MAX_STR_LEN 20
 #define DIFF_ROOMS 10
 #define NUM_ROOMS 7
+typedef int bool;
+#define TRUE 1
+#define FALSE 0
 //How we compare rooms
 enum Room_type{
   START_ROOM,
@@ -31,7 +34,7 @@ struct Game{
 };
 
 // Prototypes
-char* get_room_name(int roomNum);
+char* set_room_name(int roomNum);
 void init_game(struct Game* adventure);
 int randNum(int start, int end);
 int check_win(struct Room* possibleEnd);
@@ -51,13 +54,13 @@ int main(int argc, char** argv){
   mkdir(directory, 0666);
 
 
-  struct Room room1, *roomPointer;
+  //struct Room room1, *roomPointer;
   struct Game adventure, *adventurePointer;
-  roomPointer = &room1;
+  //roomPointer = &room1;
   adventurePointer = &adventure;
   // initializing struct member variables
   init_game(adventurePointer);
-  //init_room(roomPointer);
+
 
 
   return 0;
@@ -65,8 +68,8 @@ int main(int argc, char** argv){
 }
 
 
-//get_room_name, room names are based on scary movies//
-char* get_room_name(int roomNum){
+//set_room_name, room names are based on scary movies//
+char* set_room_name(int roomNum){
   char* room_name = malloc(sizeof(char) * (MAX_STR_LEN +1));
   memset(room_name, '\0', MAX_STR_LEN+1);
   // Declare room names
@@ -113,33 +116,55 @@ void init_game(struct Game* adventure){
   adventure->numSteps =0;
   adventure->numOfRooms = NUM_ROOMS;
   adventure->roomArray = malloc(sizeof(struct Room *) * NUM_ROOMS);
-  printf("MIDDLE OF INIT GAME\n");
+  printf("THINK ITS A GAME\n");
 
-  int i;
+  int i, j, random_num;
+  int taken[20];
+  int check = FALSE;
   for (i = 0; i < NUM_ROOMS; ++i) {
-    printf("Ahuuh-haaaawuh\n");
+    printf("Ahuuhaa-haaaawuh\n");
 
     adventure->roomArray[i] = malloc(sizeof(struct Room));
     adventure->roomArray[i]->name = malloc(sizeof(char) * (MAX_STR_LEN+1));
     adventure->roomArray[i]->connection_num = 0;
 
     adventure->roomArray[i]->connectionArray = malloc(sizeof(int) *50);
-    printf("END OF INIT GAME!\n");
 
-    // add_connection(adventurePointer, i);
+    do{
+      random_num= randNum(0,7);
+      taken[i] = random_num;
+      printf("random_num, %d\n", random_num);
+      for(j=0; j< 7; ++j){
+        printf("CHECK %d\n", check);
+        if (j ==i)
+          j+=1;
+        if (taken[j] ==random_num){
+            check = TRUE;
+            break;
+        }
+        else if(taken[j] != random_num){
+          check = FALSE;
+        }
+      }
+    }while(check == TRUE);
+    check = FALSE;
+    adventure->roomArray[i]->name =set_room_name(random_num); //TL;DR this sets the room name
+    //The above line calls set_room_name with a random
+    //number that hasn't already been taken,
+    add_connection(adventure, i);
   }
-
 
 }
 
 //randNum Function//
 int randNum(int start, int end){
-  srand(time(NULL));
+  time_t curTime;
+  srand((unsigned)time(&curTime));
   int r = rand() % end;
   // This hack isn't as random but will work for the purpose of printing a number in a range.
-  if(r+ start <= end)
+  if((r < start) && (r +start<= end))
     r+=start;
-  printf("Random Number: %d\n", r);
+  // printf("Random Number: %d\n", r);
   return r;
 }
 //To check if the user is in the end room//
@@ -151,14 +176,23 @@ int check_win(struct Room* possibleEnd){
   return 0;
 }
 //Initialize all connections//
+//Index is the position in the roomArray for the current room
 void add_connection(struct Game *adventure, int index){
   //call this function for each room
   int random = randNum(3,6);
-  struct Room* room = adventure->roomArray[index];//check this
+  printf("Random number of connections for room %d : %d\n",index, random);
+  struct Room* room = adventure->roomArray[index];
+
   while(room->connection_num < random){
+    room->connection_num +=1;
+    printf("Adding a connection: %d \n", room->connection_num);
+
     do{
+
       room->connectionArray[room->connection_num] = randNum(1,NUM_ROOMS);
-    }while(room->connectionArray[room->connection_num] == index);
+    }while(room->connectionArray[room->connection_num] == index); //Don't let a connection have a connection to itself
   }
 
 }
+//Interface Function To Be Room//
+// void interface(){}
