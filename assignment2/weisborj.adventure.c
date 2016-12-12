@@ -41,6 +41,7 @@ int randNum(int start, int end);
 int check_win(struct Room* possibleEnd);
 void add_connection(struct Game *adventure, int index);
 double floorIt(double val);
+void add_files(struct Room* room);
 
 
 int main(int argc, char** argv){
@@ -62,6 +63,11 @@ int main(int argc, char** argv){
   adventurePointer = &adventure;
   // initializing struct member variables
   init_game(adventurePointer);
+
+  int fileNum;
+  for(fileNum=0; fileNum < NUM_ROOMS; ++fileNum){
+    add_files(adventurePointer->roomArray[fileNum]);
+  }
 
 
 
@@ -214,3 +220,9 @@ int check_win(struct Room* possibleEnd){
 }
 //Interface Function To Be Room//
 // void interface(){}
+
+//Create Files
+void add_files(struct Room* room){
+  FILE *fp =fopen(room->name, "w+");
+  fclose(fp);
+}
